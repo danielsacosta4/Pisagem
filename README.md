@@ -1,6 +1,6 @@
 # Pisagem
 
-Random loop routes for walking, hiking, road cycling and mountain biking in Portugal.
+Random loop routes for walking, hiking, road cycling and mountain biking.
 
 ## Install on Proxmox
 
