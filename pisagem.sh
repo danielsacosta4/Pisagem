@@ -3,8 +3,7 @@
 #  Pisagem: random loop routes for Portugal. All-in-one installer for Proxmox VE.
 #
 #  Run on the Proxmox host shell, as root:
-#    bash -c "$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
-#      https://raw.githubusercontent.com/danielsacosta4/Pisagem/main/pisagem.sh)"
+#    bash -c "$(curl -fsSL https://raw.githubusercontent.com/danielsacosta4/pisagem/main/pisagem.sh)"
 #  or, with the file copied over:   bash pisagem.sh
 #
 #  First run : creates a Debian 12 LXC (tag "pisagem") with Docker, and inside it
@@ -16,7 +15,7 @@
 #              hand-made one) is converted, keeping its built route network.
 #
 #  Any value can be preset, e.g.  CTID=130 MEMORY=10240 bash pisagem.sh
-#  The repository is private: set GITHUB_TOKEN to a token that can read it.
+#  GITHUB_TOKEN is optional (only needed if the repository is made private again).
 # ============================================================================
 set -Eeuo pipefail
 export LANG=C.UTF-8 LC_ALL=C.UTF-8
@@ -24,7 +23,7 @@ unset LANGUAGE
 
 PISAGEM_VERSION="0.1.0"
 TAG="pisagem"
-REPO="${REPO:-danielsacosta4/Pisagem}"
+REPO="${REPO:-danielsacosta4/pisagem}"
 REF="${REF:-main}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 # Where the code comes from (a tarball of the repository); overridable for tests.
@@ -66,7 +65,7 @@ banner() {
   printf '/_/               /___/\n\n'
 }
 
-fetch() { # fetch URL OUT  (sends the token for the private repository)
+fetch() { # fetch URL OUT  (sends GITHUB_TOKEN to GitHub if one is set)
   local auth=()
   if [[ -n "$GITHUB_TOKEN" && "$1" =~ ^https://(api\.github\.com|raw\.githubusercontent\.com)/ ]]; then
     auth=(-H "Authorization: Bearer $GITHUB_TOKEN")
@@ -94,7 +93,7 @@ in_container() { # in_container install|update
   # --- the code ---
   step "Getting Pisagem ($REF)"
   local tmp; tmp=$(mktemp -d)
-  fetch "$PISAGEM_SOURCE" "$tmp/src.tgz" || die "Couldn't download Pisagem from GitHub. Check GITHUB_TOKEN and the internet access; nothing was changed."
+  fetch "$PISAGEM_SOURCE" "$tmp/src.tgz" || die "Couldn't download Pisagem from GitHub. Check the internet access; nothing was changed."
   tar xzf "$tmp/src.tgz" -C "$tmp" --strip-components=1 || die "The download from GitHub was damaged. Try again; nothing was changed."
   [[ -f $tmp/web/pisagem.html && -f $tmp/server/docker-compose.yml ]] || die "The download is missing files. Nothing was changed."
   ok "Downloaded"
