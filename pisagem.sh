@@ -70,7 +70,9 @@ fetch() { # fetch URL OUT  (sends GITHUB_TOKEN to GitHub if one is set)
   if [[ -n "$GITHUB_TOKEN" && "$1" =~ ^https://(api\.github\.com|raw\.githubusercontent\.com)/ ]]; then
     auth=(-H "Authorization: Bearer $GITHUB_TOKEN")
   fi
-  curl -fsSL -m 600 --retry 3 "${auth[@]}" "$1" -o "$2"
+  curl -fsSL -m 600 --retry 3 "${auth[@]}" "$1" -o "$2" && return
+  # a wrong or leftover token makes GitHub answer 404: try once more without it
+  [[ ${#auth[@]} -gt 0 ]] && curl -fsSL -m 600 --retry 3 "$1" -o "$2"
 }
 
 # ============================================================================
