@@ -79,7 +79,7 @@ Owner's Proxmox host: 12 cores, more than 1 TB HDD, about 8 GB free RAM.
 ### All-in-one install (pisagem.sh)
 
 - One-line installer modelled on the owner's Envelo and Maré repos: creates one Debian 12 LXC tagged `pisagem` (nesting, keyctl, 4 cores, 8 GB, 60 GB) with Docker Compose in /opt/pisagem: nginx (page + /ors/, /overpass/, /photon/ proxies), ORS, Overpass (wiktorn), Photon (rtuszik). The page auto-detects /ors/v2/health and uses the same-origin services.
-- Run again = update. Finds the hand-made /opt/ors container and offers to convert it (keeps graphs). Inside: `update`, `pisagem status|logs|restart`, autologin and a banner.
+- Run again = update. Finds the hand-made /opt/ors container and offers to convert it (keeps graphs). Inside: `update`, `pisagem status|logs|restart|bikes` (bikes turns on cycling-regular and cycling-mountain, sets ORS_XMX=6g in .env, warns under 10 GB), autologin and a banner.
 - Repo is public (github.com/danielsacosta4/pisagem), no token needed; GITHUB_TOKEN is still honoured if set. `bash test/installer.sh` runs it end to end on fakes in test/fakepve (NET_DIR, MEMINFO, PISAGEM_SOURCE, MAP_URL, BASE override for tests).
 - Unverified on the real host yet: Overpass and Photon images/settings, memory with all four services.
 

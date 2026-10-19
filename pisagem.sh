@@ -145,7 +145,7 @@ EOF
   chmod 755 /usr/local/bin/update
   cat > /usr/local/bin/pisagem <<'EOF'
 #!/usr/bin/env bash
-# pisagem status | logs SERVICE | restart
+# pisagem status | logs SERVICE | restart | bikes
 set -a; . /etc/pisagem/pisagem.env; set +a
 cd "$BASE"
 case "${1:-status}" in
@@ -158,7 +158,36 @@ case "${1:-status}" in
     check "Search" "http://127.0.0.1/photon/api/?q=Porto&limit=1" photon ;;
   logs)    docker logs --tail 40 -f "${2:-ors}" ;;
   restart) docker compose restart ;;
-  *) echo "pisagem status | logs ors|overpass|photon|web | restart" ;;
+  bikes) # turn on road bike and mountain bike routes
+    CFG="$BASE/ors/config/ors-config.yml"
+    if grep -q 'cycling-mountain:' "$CFG" && grep -A1 'cycling-mountain:' "$CFG" | grep -q 'enabled: true'; then
+      echo "  Bikes are already on."; exit 0; fi
+    total=$(awk '/^MemTotal:/ {print int($2/1024)}' "${MEMINFO:-/proc/meminfo}")
+    echo "  Road bike and mountain bike need about 2–3 GB more memory for routes."
+    echo "  This container has $total MB. Recommended: 10240 MB or more."
+    if (( total < 10000 )); then
+      echo "  To give it more, on the Proxmox host shell:  pct set $(hostname) --memory 10240"
+      echo "  (use the container number; then run pisagem bikes again)"
+      read -r -p "  Turn bikes on anyway with $total MB? It may run out of memory. [y/N]: " a </dev/tty || a=""
+      [[ $a =~ ^[Yy] ]] || { echo "  Nothing changed."; exit 1; }
+    fi
+    cp "$CFG" "$CFG.before-bikes"
+    sed -i '/^      cycling-regular:/,+1d; /^      cycling-mountain:/,+1d' "$CFG"
+    sed -i '/^      foot-hiking:/,+1{/enabled:/a\
+      cycling-regular:\
+        enabled: true\
+      cycling-mountain:\
+        enabled: true
+}' "$CFG"
+    if ! grep -A1 'cycling-mountain:' "$CFG" | grep -q 'enabled: true'; then
+      cp "$CFG.before-bikes" "$CFG"
+      echo "  Couldn't edit $CFG (unexpected layout). Nothing changed; send this message over."; exit 1
+    fi
+    if grep -q '^ORS_XMX=' .env 2>/dev/null; then sed -i 's/^ORS_XMX=.*/ORS_XMX=6g/' .env; else echo "ORS_XMX=6g" >> .env; fi
+    docker compose up -d ors
+    echo "  Bikes are on. The routes service is building the bike networks: about an hour,"
+    echo "  and walking routes are paused until it finishes. Check with: pisagem status" ;;
+  *) echo "pisagem status | logs ors|overpass|photon|web | restart | bikes" ;;
 esac
 EOF
   chmod 755 /usr/local/bin/pisagem

@@ -19,7 +19,7 @@ services:
       - ./ors:/home/ors
     environment:
       XMS: 1g
-      XMX: 4g
+      XMX: ${ORS_XMX:-4g}
 
   overpass:
     image: wiktorn/overpass-api:latest

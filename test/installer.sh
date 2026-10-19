@@ -4,7 +4,7 @@
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 W=$(mktemp -d)
-mkdir -p "$W/net/vmbr0"; echo "MemAvailable: 16000000 kB" > "$W/meminfo"; export MEMINFO="$W/meminfo" NET_DIR="$W/net" PATH="$ROOT/test/fakepve:$PATH" BASE="$W/base" MAP_URL="file://$W/map.pbf" PISAGEM_SOURCE="file://$W/src.tgz"
+mkdir -p "$W/net/vmbr0"; printf "MemTotal: 16000000 kB\nMemAvailable: 16000000 kB\n" > "$W/meminfo"; export MEMINFO="$W/meminfo" NET_DIR="$W/net" PATH="$ROOT/test/fakepve:$PATH" BASE="$W/base" MAP_URL="file://$W/map.pbf" PISAGEM_SOURCE="file://$W/src.tgz"
 pass=0; fail=0
 check() { if eval "$2"; then echo "PASS $1"; pass=$((pass+1)); else echo "FAIL $1"; fail=$((fail+1)); fi; }
 reset() { rm -rf /etc/pve/lxc /opt/ors "$BASE" /tmp/fake*.log; mkdir -p /etc/pve/lxc; }
@@ -29,6 +29,23 @@ check "update and pisagem commands" "[[ -x /usr/local/bin/update && -x /usr/loca
 check "console logs in automatically" "grep -q autologin /etc/systemd/system/container-getty@1.service.d/override.conf"
 check "token file private" "[[ \$(stat -c %a /etc/pisagem/pisagem.env) == 600 ]]"
 check "prints the address" "grep -q 'Open in a browser' $W/out1.txt"
+
+echo "== pisagem bikes"
+cp "$BASE/ors/config/ors-config.yml" "$W/cfg.keep"
+pisagem bikes </dev/null > "$W/bikes.txt" 2>&1; rc=$?
+check "bikes command finished" "[[ $rc == 0 ]]"
+check "both bike profiles on" "grep -A1 'cycling-regular:' $BASE/ors/config/ors-config.yml | grep -q 'enabled: true' && grep -A1 'cycling-mountain:' $BASE/ors/config/ors-config.yml | grep -q 'enabled: true'"
+check "walking profiles still on" "grep -A1 'foot-hiking:' $BASE/ors/config/ors-config.yml | grep -q 'enabled: true'"
+check "config still valid YAML" "python3 -c 'import yaml,sys; d=yaml.safe_load(open(sys.argv[1])); assert d[\"ors\"][\"engine\"][\"profiles\"][\"cycling-mountain\"][\"enabled\"]' $BASE/ors/config/ors-config.yml"
+check "routes get more memory" "grep -q '^ORS_XMX=6g' $BASE/.env"
+check "routes restarted" "grep -q 'compose up -d ors' /tmp/fakedocker.log"
+pisagem bikes </dev/null > "$W/bikes2.txt" 2>&1
+check "second time says already on" "grep -q 'already on' $W/bikes2.txt"
+echo "MemAvailable: 8000000 kB" > "$W/meminfo2"; echo "MemTotal: 8388608 kB" >> "$W/meminfo2"
+cp "$W/cfg.keep" "$BASE/ors/config/ors-config.yml"
+MEMINFO="$W/meminfo2" pisagem bikes </dev/null > "$W/bikes3.txt" 2>&1; rc=$?
+check "with 8 GB and no answer: stops, nothing changed" "[[ $rc != 0 ]] && ! grep -q cycling $BASE/ors/config/ors-config.yml"
+check "tells how to raise memory" "grep -q 'pct set' $W/bikes3.txt"
 
 echo "== run again: updates in place"
 echo "  bikes: yes" >> "$BASE/ors/config/ors-config.yml"

@@ -17,7 +17,7 @@ It creates one Debian 12 container (tag `pisagem`, 4 cores, 8 GB, 60 GB) running
 
 Running it again updates that container. If it finds the earlier hand-made OpenRouteService container (`/opt/ors`), it offers to convert it and keeps the routes it already built.
 
-Inside the container: `update` gets the latest version, `pisagem status` checks each service, `pisagem logs`, `pisagem restart`.
+Inside the container: `update` gets the latest version, `pisagem status` checks each service, `pisagem logs`, `pisagem restart`, and `pisagem bikes` turns on road bike and mountain bike routes (best with 10 GB of memory).
 
 The first start takes a while: the route network, Overpass database and search index are built from the map (an hour or more).
 
