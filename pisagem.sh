@@ -191,6 +191,8 @@ case "${1:-status}" in
 esac
 EOF
   chmod 755 /usr/local/bin/pisagem
+  # some consoles (pct enter) don't look in /usr/local/bin
+  ln -sf /usr/local/bin/pisagem /usr/bin/pisagem; ln -sf /usr/local/bin/update /usr/bin/update
 
   # --- console: log in automatically, show the address ---
   mkdir -p /etc/systemd/system/container-getty@1.service.d /etc/systemd/system/console-getty.service.d
