@@ -9,7 +9,6 @@ services:
     volumes:
       - ./web:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on: [ors, overpass, photon]
 
   ors:
     image: openrouteservice/openrouteservice:v9.0.0
